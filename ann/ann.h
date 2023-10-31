@@ -55,7 +55,7 @@ float rand_float(float min, float max)
 /// <param name="hidden_size"> - Size of hidden layers</param>
 /// <param name="normalization_func"> - Function that will be used to scale values in neurons</param>
 /// <param name="derivative_of_norm_func"> - Derivative of normalization function that will be used in backpropagation</param>
-template <unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size, float (*normalization_func)(float), float (*derivative_of_norm_func)(float)>
+template <unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
 struct ann
 {
 	/// <summary>
@@ -112,6 +112,13 @@ struct ann
 	void reset_neurons();
 
 	/// <summary>
+	/// Sets all input neurons to random values between min and max
+	/// </summary>
+	/// <param name="min"> - Lower bound of random values</param>
+	/// <param name="max"> - Upper bound of random values</param>
+	void set_input_to_rand(float min, float max);
+
+	/// <summary>
 	/// Sets all weights to random values between min and max
 	/// </summary>
 	/// <param name="min"> - Lower bound of random values</param>
@@ -125,8 +132,8 @@ struct ann
 	void backpropagation(float expected_results[output_size]);
 };
 
-template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size, float (*normalization_func)(float), float (*derivative_of_norm_func)(float)>
-inline ann<input_size, output_size, hidden_amount, hidden_size, normalization_func, derivative_of_norm_func>::ann()
+template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+inline ann<input_size, output_size, hidden_amount, hidden_size>::ann()
 {
 	for (unsigned int i = 0; i < input_size; i++)
 	{
@@ -170,8 +177,8 @@ inline ann<input_size, output_size, hidden_amount, hidden_size, normalization_fu
 	}
 }
 
-template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size, float (*normalization_func)(float), float (*derivative_of_norm_func)(float)>
-inline void ann<input_size, output_size, hidden_amount, hidden_size, normalization_func, derivative_of_norm_func>::reset_neurons()
+template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+inline void ann<input_size, output_size, hidden_amount, hidden_size>::reset_neurons()
 {
 	for (unsigned int i = 0; i < input_size; i++)
 	{
@@ -190,8 +197,8 @@ inline void ann<input_size, output_size, hidden_amount, hidden_size, normalizati
 	}
 }
 
-template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size, float (*normalization_func)(float), float (*derivative_of_norm_func)(float)>
-inline void ann<input_size, output_size, hidden_amount, hidden_size, normalization_func, derivative_of_norm_func>::calc_output()
+template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+inline void ann<input_size, output_size, hidden_amount, hidden_size>::calc_output()
 {
 	for (unsigned int i = 0; i < hidden_amount; i++) // Resetting hidden layers
 	{
@@ -245,8 +252,37 @@ inline void ann<input_size, output_size, hidden_amount, hidden_size, normalizati
 	}
 }
 
-template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size, float (*normalization_func)(float), float (*derivative_of_norm_func)(float)>
-inline void ann<input_size, output_size, hidden_amount, hidden_size, normalization_func, derivative_of_norm_func>::set_weights_to_rand(float min, float max)
+template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+inline void ann<input_size, output_size, hidden_amount, hidden_size>::set_weights_to_rand(float min, float max)
+{
+	for (unsigned int i = 0; i < hidden_size; i++)
+	{
+		for (unsigned int j = 0; j < input_size; j++)
+		{
+			weights.first_layer(i, j) = rand_float(min, max);
+		}
+	}
+	for (unsigned int layer_number = 0; layer_number < hidden_amount - 1; layer_number++)
+	{
+		for (unsigned int next_layer_neuron = 0; next_layer_neuron < hidden_size; next_layer_neuron++)
+		{
+			for (unsigned int prev_layer_neuron = 0; prev_layer_neuron < hidden_size; prev_layer_neuron++)
+			{
+				weights.hidden_layers[layer_number](next_layer_neuron, prev_layer_neuron) = rand_float(min, max);
+			}
+		}
+	}
+	for (unsigned int i = 0; i < output_size; i++)
+	{
+		for (unsigned int j = 0; j < hidden_size; j++)
+		{
+			weights.last_layer(i, j) = rand_float(min, max);
+		}
+	}
+}
+
+template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+inline void ann<input_size, output_size, hidden_amount, hidden_size>::set_weights_to_rand(float min, float max)
 {
 	for (unsigned int i = 0; i < hidden_size; i++)
 	{
@@ -274,8 +310,8 @@ inline void ann<input_size, output_size, hidden_amount, hidden_size, normalizati
 	}
 }
 
-template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size, float(*normalization_func)(float), float (*derivative_of_norm_func)(float)>
-inline void ann<input_size, output_size, hidden_amount, hidden_size, normalization_func, derivative_of_norm_func>::backpropagation(float expected_results[output_size])
+template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropagation(float expected_results[output_size])
 {
 	// Neurons in this ann will represent errors
 	ann<input_size, output_size, hidden_amount, hidden_size, normalization_func, derivative_of_norm_func> new_weights_ann;
