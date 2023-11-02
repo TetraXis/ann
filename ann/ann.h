@@ -313,25 +313,5 @@ inline void ann<input_size, output_size, hidden_amount, hidden_size>::set_weight
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
 inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropagation(float expected_results[output_size])
 {
-	// Neurons in this ann will represent errors
-	ann<input_size, output_size, hidden_amount, hidden_size, normalization_func, derivative_of_norm_func> new_weights_ann;
 
-	struct
-	{
-		float input[input_size];
-		float hidden[hidden_amount][hidden_size]; // Dimentions are reversed for faster access
-		float output[output_size];
-	} gradients;
-
-	// Calculating for last layer
-	for (unsigned int next_layer_neuron = 0; next_layer_neuron < output_size; next_layer_neuron++)
-	{
-		new_weights_ann.neurons.output[next_layer_neuron] = (neurons.output[next_layer_neuron] - expected_results[next_layer_neuron]) /* * (neurons.output[i] - expected_results[i])*/; // Maybe add squaring
-		gradients.output[next_layer_neuron] = new_weights_ann.neurons.output[next_layer_neuron] * derivative_of_norm_func(neurons.output[next_layer_neuron]);
-
-		for (unsigned int prev_layer_neuron = 0; prev_layer_neuron < hidden_size; prev_layer_neuron++)
-		{
-			new_weights_ann.weights.last_layer[next_layer_neuron][prev_layer_neuron] = weights.last_layer[next_layer_neuron][prev_layer_neuron] - learning_rate * gradients.output[next_layer_neuron] * neurons.hidden[hidden_amount - 1][prev_layer_neuron];
-		}
-	}
 }
