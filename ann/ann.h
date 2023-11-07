@@ -266,5 +266,5 @@ inline void ann<input_size, output_size, hidden_amount, hidden_size>::set_weight
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
 inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropagation(float expected_results[output_size])
 {
-	// TODO: 
+
 }
