@@ -98,17 +98,10 @@ struct ann
 	void set_weights_to_rand(float min, float max);
 
 	/// <summary>
-	/// Sets all input neurons to random values between min and max
-	/// </summary>
-	/// <param name="min"> - Lower bound of random values</param>
-	/// <param name="max"> - Upper bound of random values</param>
-	void set_input_to_rand(float min, float max);
-
-	/// <summary>
 	/// Backpropagates the error
 	/// </summary>
-	/// <param name="expected_results"> - Expected results that ANN should aim for</param>
-	void backpropagation(float expected_results[output_size]);
+	/// <param name="target_results"> - Expected results that ANN should aim for</param>
+	void backpropagation(float target_results[output_size]);
 };
 
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
@@ -264,7 +257,40 @@ inline void ann<input_size, output_size, hidden_amount, hidden_size>::set_weight
 }
 
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
-inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropagation(float expected_results[output_size])
+inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropagation(float target_results[output_size])
 {
+	// TODO: Add Backpropagation to Biases
+	// TODO: Add Backpropagation to other layers
+	// TODO: Add SGD
 
+	// Cost function is 0.5 * (target - out)^2 //
+
+	float err_by_out;	// Derivative of Error in respect to Out
+	float out_by_in;	// Derivative of Out in respect to In
+	float in_by_weight;	// Derivative of In in respect to Weight
+
+	// BACKPROP FOR LAYER OF WEIGHTS BEFORE OUTPUT ============================================= //
+	
+	for (unsigned int i = 0; i < output_size; i++)					// Picking output neuron
+	{
+		err_by_out	= neurons.output[i] - target_results[i];		// Derivative of Cost function;	C = 0.5 * (target - out)^2;	C' = out - target
+		out_by_in	= neurons.output[i] * (1 - neurons.output[i]);	// Derivative of Sigmoid;		f'(x) = f(x) * (1 - f(x))
+
+		biases.output[i] = biases.output[i] - learning_rate * err_by_out * out_by_in; // That line is a complete guess, needs checking
+		//                                                    ^~~~~~~~~~~~~~~~~~~~~~
+		//                                                    Derivative of Error in respect to Bias, where in_by_bias is [[ 1 ]]
+									
+		for (unsigned int j = 0; j < hidden_size; j++)				// Picking prev layer neuron
+		{
+			in_by_weight = neurons.output[j];						// Derivative of [[ weight * out_prev + ... + b ]] in respect to Weight
+
+			weights.last_layer(i, j) = weights.last_layer(i, j) - learning_rate * err_by_out * out_by_in * in_by_weight;
+			// ^~~~~~~~~~~~~~~~~~~~~                                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			// Weight between i and j nuerons                                     Derivative of Error in respect to Weight
+		}
+	}
+
+	// BACKPROP FOR LAYER OF WEIGHTS BEFORE OUTPUT ============================================= //
+
+	// ... //
 }
