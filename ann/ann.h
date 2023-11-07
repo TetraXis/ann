@@ -76,7 +76,7 @@ struct ann
 	/// <summary>
 	/// Calculates output layer based on input layer and weights
 	/// </summary>
-	void calc_output();
+	void forward_propagation();
 
 	/// <summary>
 	/// Sets all neurons (input, hidden, output) to zero
@@ -169,7 +169,7 @@ inline ann<input_size, output_size, hidden_amount, hidden_size>::ann()
 }
 
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
-inline void ann<input_size, output_size, hidden_amount, hidden_size>::calc_output()
+inline void ann<input_size, output_size, hidden_amount, hidden_size>::forward_propagation()
 {
 	for (unsigned int i = 0; i < hidden_amount; i++) // Resetting hidden layers
 	{
