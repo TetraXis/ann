@@ -8,8 +8,11 @@
 
 // #define ANN_DEBUG
 
+// https://academy.yandex.ru/handbook/ml/article/metod-obratnogo-rasprostraneniya-oshibki
+
 #pragma once
 #include <cmath>
+#include <fstream>
 #define EIGEN_STACK_ALLOCATION_LIMIT 0
 #include "D:\C++\Tools\eigen-3.4.0\Eigen\Eigen" // This is bs
 #ifdef ANN_DEBUG
@@ -33,6 +36,18 @@ float rand_float(float min, float max)
 }
 
 /// <summary>
+/// Sample for teaching and testing Neural Network. `sample::input_size` should be equal to `ann:input_size`, just like `sample::output_size` should be equal to `ann::output_size`.
+/// </summary>
+/// <param name="input_size"> - input neurons</param>
+/// <param name="output_size"> - expected results</param>
+template <unsigned int input_size, unsigned int output_size>
+struct sample
+{
+	Eigen::Vector<float, input_size>	input;
+	Eigen::Vector<float, output_size>	output;
+};
+
+/// <summary>
 /// Atrificial Neural Network. Uses sigmoid as activation function.
 /// </summary>
 /// <param name="input_size"> - Size of input layer</param>
@@ -48,7 +63,7 @@ struct ann
 	/// 2 - 200% learning.
 	/// And so on...
 	/// </summary>
-	float learning_rate = 0.f;
+	float learning_rate = 0.0f;
 
 	struct
 	{
@@ -72,6 +87,10 @@ struct ann
 
 	ann();
 	ann(const ann&) = default;
+
+	bool load(std::string path);
+
+	bool save(std::string path) const;
 
 	/// <summary>
 	/// Calculates output layer based on input layer and weights
@@ -98,10 +117,17 @@ struct ann
 	void set_weights_to_rand(float min, float max);
 
 	/// <summary>
+	/// Cost function between `neurons.output` and `target`.
+	/// </summary>
+	/// <param name="target"> - target results</param>
+	/// <returns>Sum of (target - out)^2</returns>
+	float calc_cost(const Eigen::Vector<float, output_size>& target) const;
+
+	/// <summary>
 	/// Backpropagates the error
 	/// </summary>
 	/// <param name="target_results"> - Expected results that ANN should aim for</param>
-	void backpropagation(float target_results[output_size]);
+	void backpropagation(const Eigen::Vector<float, output_size>& target);
 };
 
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
@@ -159,6 +185,56 @@ inline ann<input_size, output_size, hidden_amount, hidden_size>::ann()
 			weights.last_layer(i, j) = 0;
 		}
 	}
+}
+
+template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+inline bool ann<input_size, output_size, hidden_amount, hidden_size>::load(std::string path)
+{
+	std::ifstream fin(path, std::ios::binary);
+	unsigned int temp1, temp2, temp3, temp4;
+
+	if (!fin)
+	{
+		return false;
+	}
+
+	fin.read((char*)&temp1, sizeof(temp1));
+	fin.read((char*)&temp2, sizeof(temp2));
+	fin.read((char*)&temp3, sizeof(temp3));
+	fin.read((char*)&temp4, sizeof(temp4));
+
+	if (temp1 != input_size || temp2 != output_size || temp3 != hidden_amount || temp4 != hidden_size)
+	{
+		fin.close();
+		return false;
+	}
+
+	fin.read((char*)this, sizeof(*this));
+
+	fin.close();
+	return true;
+}
+
+template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+inline bool ann<input_size, output_size, hidden_amount, hidden_size>::save(std::string path) const
+{
+	std::ofstream fout(path, std::ios::binary);
+
+	if (!fout)
+	{
+		return false;
+	}
+
+	unsigned int temp1 = input_size, temp2 = output_size, temp3 = hidden_amount, temp4 = hidden_size;
+
+	fout.write((char*)&temp1, sizeof(temp1));
+	fout.write((char*)&temp2, sizeof(temp2));
+	fout.write((char*)&temp3, sizeof(temp3));
+	fout.write((char*)&temp4, sizeof(temp4));
+	fout.write((char*)this, sizeof(*this));
+
+	fout.close();
+	return true;
 }
 
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
@@ -257,7 +333,20 @@ inline void ann<input_size, output_size, hidden_amount, hidden_size>::set_weight
 }
 
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
-inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropagation(float target_results[output_size])
+inline float ann<input_size, output_size, hidden_amount, hidden_size>::calc_cost(const Eigen::Vector<float, output_size>& target) const
+{
+	float result = 0.0;
+
+	for (unsigned int i = 0; i < output_size; i++)
+	{
+		result += (target[i] - neurons.output[i]) * (target[i] - neurons.output[i]);
+	}
+
+	return result;
+}
+
+template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropagation(const Eigen::Vector<float, output_size>& target)
 {
 	// TODO: Add Backpropagation to Biases
 	// TODO: Add Backpropagation to other layers
@@ -273,7 +362,7 @@ inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropag
 	
 	for (unsigned int i = 0; i < output_size; i++)					// Picking output neuron
 	{
-		err_by_out	= neurons.output[i] - target_results[i];		// Derivative of Cost function;	C = 0.5 * (target - out)^2;	C' = out - target
+		err_by_out	= neurons.output[i] - target[i];				// Derivative of Cost function;	C = 0.5 * (target - out)^2;	C' = out - target
 		out_by_in	= neurons.output[i] * (1 - neurons.output[i]);	// Derivative of Sigmoid;		f'(x) = f(x) * (1 - f(x))
 
 		biases.output[i] = biases.output[i] - learning_rate * err_by_out * out_by_in; // That line is a complete guess, needs checking
