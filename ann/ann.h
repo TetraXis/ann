@@ -128,6 +128,8 @@ struct ann
 	/// </summary>
 	/// <param name="target_results"> - Expected results that ANN should aim for</param>
 	void backpropagation(const Eigen::Vector<float, output_size>& target);
+
+	void learn(const sample<input_size, output_size>* samples, unsigned int amount);
 };
 
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
@@ -348,38 +350,25 @@ inline float ann<input_size, output_size, hidden_amount, hidden_size>::calc_cost
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
 inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropagation(const Eigen::Vector<float, output_size>& target)
 {
-	// TODO: Add Backpropagation to Biases
-	// TODO: Add Backpropagation to other layers
-	// TODO: Add SGD
 
-	// Cost function is 0.5 * (target - out)^2 //
+}
 
-	float err_by_out;	// Derivative of Error in respect to Out
-	float out_by_in;	// Derivative of Out in respect to In
-	float in_by_weight;	// Derivative of In in respect to Weight
+template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+inline void ann<input_size, output_size, hidden_amount, hidden_size>::learn(const sample<input_size, output_size>* samples, unsigned int amount)
+{
+	unsigned int step = sqrt(amount);
 
-	// BACKPROP FOR LAYER OF WEIGHTS BEFORE OUTPUT ============================================= //
-	
-	for (unsigned int i = 0; i < output_size; i++)					// Picking output neuron
+	for (unsigned int i = 0; i < amount; i++)
 	{
-		err_by_out	= neurons.output[i] - target[i];				// Derivative of Cost function;	C = 0.5 * (target - out)^2;	C' = out - target
-		out_by_in	= neurons.output[i] * (1 - neurons.output[i]);	// Derivative of Sigmoid;		f'(x) = f(x) * (1 - f(x))
+		forward_propagation(samples[i].output);
 
-		biases.output[i] = biases.output[i] - learning_rate * err_by_out * out_by_in; // That line is a complete guess, needs checking
-		//                                                    ^~~~~~~~~~~~~~~~~~~~~~
-		//                                                    Derivative of Error in respect to Bias, where in_by_bias is [[ 1 ]]
-									
-		for (unsigned int j = 0; j < hidden_size; j++)				// Picking prev layer neuron
+		if (i % step == 0)
 		{
-			in_by_weight = neurons.output[j];						// Derivative of [[ weight * out_prev + ... + b ]] in respect to Weight
-
-			weights.last_layer(i, j) = weights.last_layer(i, j) - learning_rate * err_by_out * out_by_in * in_by_weight;
-			// ^~~~~~~~~~~~~~~~~~~~~                                              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-			// Weight between i and j nuerons                                     Derivative of Error in respect to Weight
+			// test
+		}
+		else
+		{
+			backpropagation(samples[i].output);
 		}
 	}
-
-	// BACKPROP FOR LAYER OF WEIGHTS BEFORE OUTPUT ============================================= //
-
-	// ... //
 }
