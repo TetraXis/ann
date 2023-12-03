@@ -13,6 +13,7 @@
 #pragma once
 #include <cmath>
 #include <fstream>
+#include <vector>
 #define EIGEN_STACK_ALLOCATION_LIMIT 0
 #include "D:\C++\Tools\eigen-3.4.0\Eigen\Eigen" // This is bs
 #ifdef ANN_DEBUG
@@ -128,6 +129,11 @@ struct ann
 	/// </summary>
 	/// <param name="target_results"> - Expected results that ANN should aim for</param>
 	void backpropagation(const Eigen::Vector<float, output_size>& target);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	void sgd(const std::vector < sample<input_size, output_size> >& samples, unsigned int iterations);
 
 	void learn(const sample<input_size, output_size>* samples, unsigned int amount);
 };
@@ -422,9 +428,24 @@ inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropag
 		for (unsigned int j = 0; j < input_size; j++)
 		{
 			weights.first_layer(i, j) -= learning_rate * derivatives.hidden[0][i] * neurons.input[j];
-			//                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			//                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			//                                           ^ derivative of Weight
 		}
+	}
+}
+
+template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+inline void ann<input_size, output_size, hidden_amount, hidden_size>::sgd(const std::vector<sample<input_size, output_size>>& samples, unsigned int iterations)
+{
+	unsigned int choice;
+
+	for (unsigned int i = 0; i < iterations; i++)
+	{
+		choice = rand() % samples.size();
+		// TODO: change rand(), it can not be greater then ~32000
+
+		forward_propagation(samples[choice].input);
+		backpropagation(samples[choice].output);
 	}
 }
 
