@@ -350,7 +350,82 @@ inline float ann<input_size, output_size, hidden_amount, hidden_size>::calc_cost
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
 inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropagation(const Eigen::Vector<float, output_size>& target)
 {
+	// TODO: optimise memory usage
 
+	struct
+	{
+		Eigen::Vector<float, hidden_size>	hidden[hidden_amount];
+		Eigen::Vector<float, output_size>	output;
+	} derivatives;
+
+	// calculation effect of Neurons
+
+	for (unsigned int i = 0; i < output_size; i++) // output layer
+	{
+		derivatives.output[i] = (neurons.output[i] - target[i]) * neurons.output[i] * (1 - neurons.output[i]);
+	}
+
+	for (unsigned int i = 0; i < hidden_size; i++) // last hidden layer
+	{
+		derivatives.hidden[hidden_amount - 1][i] = 0;
+
+		for (unsigned int j = 0; j < output_size; j++)
+		{
+			derivatives.hidden[hidden_amount - 1][i] += weights.last_layer(j, i) * derivatives.output[j];
+		}
+
+		derivatives.hidden[hidden_amount - 1][i] *= neurons.hidden[hidden_amount - 1][i] * (1 - neurons.hidden[hidden_amount - 1][i]);
+	}
+
+	for (unsigned int layer = hidden_amount - 1; layer > 0; layer--) // remaining hidden layers
+	{
+		for (unsigned int i = 0; i < hidden_size; i++)
+		{
+			derivatives.hidden[layer - 1][i] = 0;
+
+			for (unsigned int j = 0; j < hidden_size; j++)
+			{
+				derivatives.hidden[layer - 1][i] += weights.hidden_layers[layer](j, i) * derivatives.hidden[layer][j];
+			}
+
+			derivatives.hidden[layer - 1][i] *= neurons.hidden[layer - 1][i] * (1 - neurons.hidden[layer - 1][i]);
+		}
+	}
+
+	// changing weights
+
+	for (unsigned int i = 0; i < output_size; i++) // last layer
+	{
+		for (unsigned int j = 0; j < hidden_size; j++)
+		{
+			weights.last_layer(i, j) -= learning_rate * derivatives.output[i] * neurons.hidden[hidden_amount - 1][j];
+			//                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			//                                          ^ derivative of Weight
+		}
+	}
+
+	for (unsigned int layer = hidden_amount - 2; layer > 0; layer--) // hidden layers
+	{
+		for (unsigned int i = 0; i < output_size; i++)
+		{
+			for (unsigned int j = 0; j < hidden_size; j++)
+			{
+				weights.hidden_layers[layer -1](i, j) -= learning_rate * derivatives.hidden[layer][i] * neurons.hidden[layer - 1][j];
+				//                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+				//                                                       ^ derivative of Weight
+			}
+		}
+	}
+
+	for (unsigned int i = 0; i < hidden_size; i++) // first layer
+	{
+		for (unsigned int j = 0; j < input_size; j++)
+		{
+			weights.first_layer(i, j) -= learning_rate * derivatives.hidden[0][i] * neurons.input[j];
+			//                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			//                                           ^ derivative of Weight
+		}
+	}
 }
 
 template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
