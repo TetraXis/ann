@@ -101,6 +101,11 @@ namespace ann
 		void forward_propagation(Eigen::Vector<float, input_size> input_values);
 
 		/// <summary>
+		/// Calculates output layer based on input layer and weights
+		/// </summary>
+		void forward_propagation(float const* input_values);
+
+		/// <summary>
 		/// Sets all neurons (input, hidden, output) to zero
 		/// </summary>
 		void reset_neurons();
@@ -137,9 +142,9 @@ namespace ann
 		/// <summary>
 		/// 
 		/// </summary>
-		void sgd(const std::vector < sample<input_size, output_size> >& samples, unsigned int iterations, float step_start, float step_end);
+		void sgd(sample<input_size, output_size> const* samples, unsigned int amount, unsigned int iterations, float step_start, float step_end);
 
-		void learn(const sample<input_size, output_size>* samples, unsigned int amount);
+		void learn(const sample<input_size, output_size>* samples, unsigned int amount, float tolerancy = 0.01, unsigned int attempts = 100);
 	};
 
 	template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
@@ -294,6 +299,21 @@ namespace ann
 #endif // ANN_DEBUG
 
 		neurons.input = input_values;
+		forward_propagation();
+	}
+
+	template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
+	inline void ann<input_size, output_size, hidden_amount, hidden_size>::forward_propagation(float const* input_values)
+	{
+#ifdef ANN_DEBUG
+		std::cout << "> forward_propagation(*...)\n";
+#endif // ANN_DEBUG
+
+		for (unsigned int i = 0; i < input_size; i++)
+		{
+			neurons.input[i] = input_values[i];
+		}
+
 		forward_propagation();
 	}
 
@@ -472,15 +492,15 @@ namespace ann
 	}
 
 	template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
-	inline void ann<input_size, output_size, hidden_amount, hidden_size>::sgd(const std::vector<sample<input_size, output_size>>& samples, unsigned int iterations, float step_start, float step_end)
+	inline void ann<input_size, output_size, hidden_amount, hidden_size>::sgd(sample<input_size, output_size> const* samples, unsigned int amount, unsigned int iterations, float step_start, float step_end)
 	{
 		// TODO: make proper step size
 		unsigned int choice = 0;
 		float step_size = (step_end - step_start) / iterations;
 
-		for (unsigned int i = 0; i < iterations; i++, step_start+=step_size)
+		for (unsigned int i = 0; i < iterations; i++, step_start += step_size)
 		{
-			choice = rand() % samples.size();
+			choice = rand() % amount;
 			// TODO: change rand(), it can not be greater then ~32000
 
 			neurons.input = samples[choice].input;
@@ -490,23 +510,28 @@ namespace ann
 	}
 
 	template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
-	inline void ann<input_size, output_size, hidden_amount, hidden_size>::learn(const sample<input_size, output_size>* samples, unsigned int amount)
+	inline void ann<input_size, output_size, hidden_amount, hidden_size>::learn(const sample<input_size, output_size>* samples, unsigned int amount, float tolerancy, unsigned int attempts)
 	{
-		// TODO: Finish cross selection
-		unsigned int step = sqrt(amount);
+		bool should_learn = true;
 
-		for (unsigned int i = 0; i < amount; i++)
+		while (should_learn && attempts)
 		{
-			forward_propagation(samples[i].output);
+			// Looking if we should continue
+			should_learn = false;
+			attempts--;
+			for (unsigned int i = 0; i < amount; i++)
+			{
+				forward_propagation(&samples[i].input[0]);
 
-			if (i % step == 0)
-			{
-				// test
+				if (!neurons.output.isApprox(samples[i].output, tolerancy))
+				{
+					should_learn = true;
+					break;
+				}
 			}
-			else
-			{
-				backpropagation(samples[i].output);
-			}
+
+			//TODO: Expose these "magic numbers" to function parameters
+			sgd(samples, amount, 100, 1, 0);
 		}
 	}
 }

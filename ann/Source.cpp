@@ -3,5 +3,5 @@
 
 void test()
 {
-	ann::ann<2, 2, 2, 2> a;
+	ann::ann<1, 1, 2, 1> a;
 }
