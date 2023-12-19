@@ -61,12 +61,6 @@ namespace ann
 	template <unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
 	struct ann
 	{
-		/// <summary>
-		/// 0 - no learning.
-		/// 1 - full learning.
-		/// 2 - 200% learning.
-		/// And so on...
-		/// </summary>
 		float learning_rate = 0.2f;
 
 		struct
@@ -400,8 +394,8 @@ namespace ann
 		{
 			Eigen::Vector<float, hidden_size>	hidden[hidden_amount];
 			Eigen::Vector<float, output_size>	output;
-		} derivatives;
 
+		} derivatives;
 		// calculation effect of Neurons
 
 		for (unsigned int i = 0; i < output_size; i++) // output layer
@@ -496,6 +490,7 @@ namespace ann
 	template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
 	inline void ann<input_size, output_size, hidden_amount, hidden_size>::learn(const sample<input_size, output_size>* samples, unsigned int amount)
 	{
+		// TODO: Finish cross selection
 		unsigned int step = sqrt(amount);
 
 		for (unsigned int i = 0; i < amount; i++)
