@@ -132,12 +132,12 @@ namespace ann
 		/// Backpropagates the error
 		/// </summary>
 		/// <param name="target_results"> - Expected results that ANN should aim for</param>
-		void backpropagation(const Eigen::Vector<float, output_size>& target);
+		void backpropagation(const Eigen::Vector<float, output_size>& target, float step_size = 1);
 
 		/// <summary>
 		/// 
 		/// </summary>
-		void sgd(const std::vector < sample<input_size, output_size> >& samples, unsigned int iterations);
+		void sgd(const std::vector < sample<input_size, output_size> >& samples, unsigned int iterations, float step_start, float step_end);
 
 		void learn(const sample<input_size, output_size>* samples, unsigned int amount);
 	};
@@ -386,7 +386,7 @@ namespace ann
 	}
 
 	template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
-	inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropagation(const Eigen::Vector<float, output_size>& target)
+	inline void ann<input_size, output_size, hidden_amount, hidden_size>::backpropagation(const Eigen::Vector<float, output_size>& target, float step_size)
 	{
 		// TODO: optimise memory usage
 
@@ -396,6 +396,7 @@ namespace ann
 			Eigen::Vector<float, output_size>	output;
 
 		} derivatives;
+
 		// calculation effect of Neurons
 
 		for (unsigned int i = 0; i < output_size; i++) // output layer
@@ -414,7 +415,7 @@ namespace ann
 
 			derivatives.hidden[hidden_amount - 1][i] *= neurons.hidden[hidden_amount - 1][i] * (1 - neurons.hidden[hidden_amount - 1][i]);
 
-			biases.hidden[hidden_amount - 1][i] -= learning_rate * derivatives.hidden[hidden_amount - 1][i];
+			biases.hidden[hidden_amount - 1][i] -= learning_rate * step_size * derivatives.hidden[hidden_amount - 1][i];
 		}
 
 		for (unsigned int layer = hidden_amount - 1; layer > 0; layer--) // remaining hidden layers
@@ -430,7 +431,7 @@ namespace ann
 
 				derivatives.hidden[layer - 1][i] *= neurons.hidden[layer - 1][i] * (1 - neurons.hidden[layer - 1][i]);
 
-				biases.hidden[layer - 1][i] -= learning_rate * derivatives.hidden[layer - 1][i];
+				biases.hidden[layer - 1][i] -= learning_rate * step_size * derivatives.hidden[layer - 1][i];
 			}
 		}
 
@@ -440,7 +441,7 @@ namespace ann
 		{
 			for (unsigned int j = 0; j < hidden_size; j++)
 			{
-				weights.last_layer(i, j) -= learning_rate * derivatives.output[i] * neurons.hidden[hidden_amount - 1][j];
+				weights.last_layer(i, j) -= learning_rate * step_size * derivatives.output[i] * neurons.hidden[hidden_amount - 1][j];
 				//                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 				//                                          ^ derivative of Weight
 			}
@@ -452,7 +453,7 @@ namespace ann
 			{
 				for (unsigned int j = 0; j < hidden_size; j++)
 				{
-					weights.hidden_layers[layer - 1](i, j) -= learning_rate * derivatives.hidden[layer][i] * neurons.hidden[layer - 1][j];
+					weights.hidden_layers[layer - 1](i, j) -= learning_rate * step_size * derivatives.hidden[layer][i] * neurons.hidden[layer - 1][j];
 					//                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 					//                                                       ^ derivative of Weight
 				}
@@ -463,7 +464,7 @@ namespace ann
 		{
 			for (unsigned int j = 0; j < input_size; j++)
 			{
-				weights.first_layer(i, j) -= learning_rate * derivatives.hidden[0][i] * neurons.input[j];
+				weights.first_layer(i, j) -= learning_rate * step_size * derivatives.hidden[0][i] * neurons.input[j];
 				//                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 				//                                           ^ derivative of Weight
 			}
@@ -471,19 +472,20 @@ namespace ann
 	}
 
 	template<unsigned int input_size, unsigned int output_size, unsigned int hidden_amount, unsigned int hidden_size>
-	inline void ann<input_size, output_size, hidden_amount, hidden_size>::sgd(const std::vector<sample<input_size, output_size>>& samples, unsigned int iterations)
+	inline void ann<input_size, output_size, hidden_amount, hidden_size>::sgd(const std::vector<sample<input_size, output_size>>& samples, unsigned int iterations, float step_start, float step_end)
 	{
 		// TODO: make proper step size
 		unsigned int choice = 0;
+		float step_size = (step_end - step_start) / iterations;
 
-		for (unsigned int i = 0; i < iterations; i++)
+		for (unsigned int i = 0; i < iterations; i++, step_start+=step_size)
 		{
 			choice = rand() % samples.size();
 			// TODO: change rand(), it can not be greater then ~32000
 
 			neurons.input = samples[choice].input;
 			forward_propagation();
-			backpropagation(samples[choice].output);
+			backpropagation(samples[choice].output, step_start);
 		}
 	}
 
